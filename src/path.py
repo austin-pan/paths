@@ -14,20 +14,21 @@ class path:
         print("extracting ", color)
         [r1, g1, b1] = color # Original value
         r2, g2, b2 = 1, 1, 1 # Value that we want to replace it with
+        rel = 5
 
-        red, green, blue = self.raw_img[:,:,0], self.raw_img[:,:,1], self.raw_img[:,:,2]
-        mask = (red == r1) & (green == g1) & (blue == b1)
-        self.img[:,:,:3][~mask] = [r2, g2, b2]
+        red, green, blue = self.raw_img[:, :, 0], self.raw_img[:, :, 1], self.raw_img[:, :, 2]
+        mask = (abs(red - r1) <= rel) & (green == g1) & (blue == b1)
+        self.img[:, :, :3][~mask] = [r2, g2, b2]
 
-        # self.img = np.where(self.raw_img == color, np.array([0, 0, 0], dtype = np.uint8), self.raw_img)
-        pass
+        print("white pixels left: ", np.sum(self.img[:, :, :3] == [1, 1, 1]))
 
     def place_vertices(self, image_paths):
         pass
 
     def save_image(self):
-        plt.imshow(self.img)
-        plt.savefig('paths_edited.png')
+        # plt.imshow(self.img)
+        # plt.savefig('paths_edited.pdf')
+        plt.imsave('paths_edited.png', self.img)
 
     def show_image(self):
         plt.imshow(self.img)
