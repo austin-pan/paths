@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+import cv2 as cv
 import numpy as np
 
 # File to handle "path" objects
 class path:
     def __init__(self, file_path, color):
-        self.raw_img = plt.imread(file_path)
+        self.raw_img = cv.imread(file_path)
         self.img = self.raw_img
         image_paths = self.extract_paths(color)
         # image_vertices = self.place_vertices(image_paths)
@@ -13,26 +14,34 @@ class path:
     def extract_paths(self, color):
         print("extracting ", color)
         [r1, g1, b1] = color # Original value
-        r2, g2, b2 = 1, 1, 1 # Value that we want to replace it with
-        rel = 5
+        r2, g2, b2 = 255, 255, 255 # Value that we want to replace it with
 
         red, green, blue = self.raw_img[:, :, 0], self.raw_img[:, :, 1], self.raw_img[:, :, 2]
-        mask = (abs(red - r1) <= rel) & (green == g1) & (blue == b1)
-        self.img[:, :, :3][~mask] = [r2, g2, b2]
+        mask = (red <= 70) & (green >= 200) & (blue <= 70)
+        self.img[:, :, :3][~mask] = [b2, g2, r2]
+        print("white pixels left: ", np.sum(self.img[:, :, :3] == [255, 255, 255]))
 
-        print("white pixels left: ", np.sum(self.img[:, :, :3] == [1, 1, 1]))
+        self.gray = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
+        self.edges = cv.Canny(self.gray, 50, 150, apertureSize = 3)
+
+        lines = cv.HoughLinesP(self.edges, 1, np.pi/180, 10, minLineLength = 10, maxLineGap = 10)
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
     def place_vertices(self, image_paths):
         pass
 
     def save_image(self):
-        # plt.imshow(self.img)
-        # plt.savefig('paths_edited.pdf')
-        plt.imsave('paths_edited.png', self.img)
+        cv.imsave('../bin/paths_edited.png', self.img)
 
     def show_image(self):
-        plt.imshow(self.img)
-        plt.show()
+        window_name = "paths"
+        cv.namedWindow(window_name, cv.WINDOW_NORMAL)
+        cv.resizeWindow(window_name, 8800, 6600)
+        cv.imshow(window_name, self.img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
     def to_adj_mat(self, image_paths):
         pass
