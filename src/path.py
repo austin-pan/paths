@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import cv2 as cv
 import numpy as np
+import math
 
 # File to handle "path" objects
 class path:
@@ -19,15 +20,44 @@ class path:
         red, green, blue = self.raw_img[:, :, 0], self.raw_img[:, :, 1], self.raw_img[:, :, 2]
         mask = (red <= 70) & (green >= 200) & (blue <= 70)
         self.img[:, :, :3][~mask] = [b2, g2, r2]
-        print("white pixels left: ", np.sum(self.img[:, :, :3] == [255, 255, 255]))
 
         self.gray = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
-        self.edges = cv.Canny(self.gray, 50, 150, apertureSize = 3)
+        ret, self.gray = cv.threshold(self.gray, 200, 255, cv.THRESH_BINARY_INV)
+        element = cv.getStructuringElement(cv.MORPH_CROSS,(3,3))
+        self.gray = cv.dilate(self.gray, element)
 
-        lines = cv.HoughLinesP(self.edges, 1, np.pi/180, 10, minLineLength = 10, maxLineGap = 10)
+        self.skel = self.skeletonize(self.gray) 
+        # print("white pixels left: ", np.sum(self.img[:, :, :3] == [255, 255, 255]))
+
+        # self.skel = cv.ximgproc.thinning(self.gray)
+
+        lines = cv.HoughLinesP(self.skel, 1, np.pi / 180, threshold = 10, minLineLength = 3, maxLineGap = 10)
+        print(len(lines))
         for line in lines:
             x1, y1, x2, y2 = line[0]
             cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+        self.img = self.skel
+
+    def skeletonize(self, img):
+        size = np.size(img)
+        skel = np.zeros(img.shape,np.uint8)
+
+        element = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
+        done = False
+
+        while (not done):
+            eroded = cv.erode(img, element)
+            temp = cv.dilate(eroded, element)
+            temp = cv.subtract(img, temp)
+            skel = cv.bitwise_or(skel, temp)
+            img = eroded.copy()
+
+            zeros = size - cv.countNonZero(img)
+            if zeros == size:
+                done = True
+
+        return skel
 
     def place_vertices(self, image_paths):
         pass
