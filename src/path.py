@@ -37,7 +37,7 @@ class path:
             x1, y1, x2, y2 = line[0]
             cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-        self.img = self.skel
+        # self.img = self.skel
 
     def skeletonize(self, img):
         size = np.size(img)
@@ -63,7 +63,7 @@ class path:
         pass
 
     def save_image(self):
-        cv.imsave('../bin/paths_edited.png', self.img)
+        cv.imwrite('../bin/paths_edited.png', self.img)
 
     def show_image(self):
         window_name = "paths"
