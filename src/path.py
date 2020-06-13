@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import cv2 as cv
 import numpy as np
 import math
@@ -35,9 +35,18 @@ class path:
         print(len(lines))
         for line in lines:
             x1, y1, x2, y2 = line[0]
+            if x1 == x2:
+                x1, y1, x2, y2 = extend_line(x1, y1, x2, y2)
             cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-        self.img = self.skel
+        # self.img = self.skel
+
+
+    def extend_line(self, x1, y1, x2, y2):
+        slope = (y1 - y2) / (x1 - x2)
+
+        return [x1, y1, x2, y2]
+
 
     def skeletonize(self, img):
         size = np.size(img)
@@ -46,7 +55,7 @@ class path:
         element = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
         done = False
 
-        while (not done):
+        while not done:
             eroded = cv.erode(img, element)
             temp = cv.dilate(eroded, element)
             temp = cv.subtract(img, temp)
@@ -68,7 +77,7 @@ class path:
     def show_image(self):
         window_name = "paths"
         cv.namedWindow(window_name, cv.WINDOW_NORMAL)
-        cv.resizeWindow(window_name, 8800, 6600)
+        cv.resizeWindow(window_name, 880, 660)
         cv.imshow(window_name, self.img)
         cv.waitKey(0)
         cv.destroyAllWindows()

@@ -1,7 +1,7 @@
 import path
 import numpy as np
 
-image = '../res/paths.png'
+image = '../res/test.png'
 col = np.array([62, 255, 0])
 # col = col / 255
 p = path.path(image, col)
