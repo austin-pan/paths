@@ -9,7 +9,7 @@ class path:
         self.raw_img = cv.imread(file_path)
         self.img = self.raw_img
         image_paths = self.extract_paths(color)
-        # image_vertices = self.place_vertices(image_paths)
+        image_vertices = self.place_vertices(image_paths)
         # adj_mat = self.to_adj_mat(image_paths)
 
     def extract_paths(self, color):
@@ -35,15 +35,16 @@ class path:
         print(len(lines))
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            if x1 == x2:
-                x1, y1, x2, y2 = extend_line(x1, y1, x2, y2)
+            # if x1 == x2:
+            #     x1, y1, x2, y2 = self.extend_line(x1, y1, x2, y2)
             cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
         # self.img = self.skel
+        return lines
 
 
     def extend_line(self, x1, y1, x2, y2):
-        slope = (y1 - y2) / (x1 - x2)
+        slope = self.slope(x1, y1, x2, y2)
 
         return [x1, y1, x2, y2]
 
@@ -68,11 +69,43 @@ class path:
 
         return skel
 
+
     def place_vertices(self, image_paths):
-        pass
+        vertices = []
+        for i in range(len(image_paths)):
+            for j in range(i):
+                intersection = self.segment_intersection(image_paths[i][0], image_paths[j][0])
+                vertices.append(intersection)
+
+                cv.circle(self.img, intersection, radius = 0, color = (255, 0, 0), thickness = 5)
+        return vertices
+
 
     def save_image(self):
         cv.imwrite('../bin/paths_edited.png', self.img)
+
+
+    def segment_intersection(self, line0, line1):
+        p0x, p0y, p1x, p1y = line0 
+        p2x, p2y, p3x, p3y = line1
+        s1x = p1x - p0x
+        s1y = p1y - p0y
+        s2x = p3x - p2x
+        s2y = p3y - p2y
+
+        denom = -s2x * s1y + s1x * s2y
+        if denom == 0:
+            return (0, 0)
+        s = (-s1y * (p0x - p2x) + s1x * (p0y - p2y)) / denom
+        t = (s2x * (p0y - p2y) - s2y * (p0x - p2x)) / denom
+
+        if s >= 0 and s <= 1 and t >= 0 and t <= 1:
+            ix = p0x + (t * s1x)
+            iy = p0y + (t * s1y)
+            return (int(ix), int(iy))
+
+        return (0, 0)
+
 
     def show_image(self):
         window_name = "paths"
@@ -82,5 +115,14 @@ class path:
         cv.waitKey(0)
         cv.destroyAllWindows()
 
+
+    def slope(self, x1, y1, x2, y2):
+        denom = x1 - x2
+        if denom == 0:
+            return 0
+        slope = (y1 - y2) / denom
+        return slope
+
+    
     def to_adj_mat(self, image_paths):
         pass
