@@ -104,7 +104,7 @@ class path:
 
     def skeletonize(self, img):
         size = np.size(img)
-        skel = np.zeros(img.shape,np.uint8)
+        skel = np.zeros(img.shape, np.uint8)
 
         element = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
         done = False
