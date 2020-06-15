@@ -33,48 +33,32 @@ class path:
 
         lines = cv.HoughLinesP(self.skel, 1, np.pi / 180, threshold = 10, minLineLength = 3, maxLineGap = 10)
         print(len(lines))
+        extended_lines = []
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            # if x1 == x2:
-            #     x1, y1, x2, y2 = self.extend_line(x1, y1, x2, y2)
-            cv.line(self.img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            p0, p1 = (x1, y1), (x2, y2)
+            e0, e1 = self.extend_line(p0, p1)
+            extended_lines.append([e0, e1])
+            # cv.line(self.img, tuple(p0), tuple(p1), (0, 0, 255), 1)
+            cv.line(self.img, tuple(e0), tuple(e1), (255, 0, 255), 1)
 
-        # self.img = self.skel
-        return lines
-
-
-    def extend_line(self, x1, y1, x2, y2):
-        slope = self.slope(x1, y1, x2, y2)
-
-        return [x1, y1, x2, y2]
+        return extended_lines
 
 
-    def skeletonize(self, img):
-        size = np.size(img)
-        skel = np.zeros(img.shape,np.uint8)
+    def extend_line(self, p0, p1, ext = 20):
+        delta = self.vec(p0, p1)
+        delta = delta / np.linalg.norm(delta)
+        p0 += ext * delta
+        p1 -= ext * delta
 
-        element = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
-        done = False
-
-        while not done:
-            eroded = cv.erode(img, element)
-            temp = cv.dilate(eroded, element)
-            temp = cv.subtract(img, temp)
-            skel = cv.bitwise_or(skel, temp)
-            img = eroded.copy()
-
-            zeros = size - cv.countNonZero(img)
-            if zeros == size:
-                done = True
-
-        return skel
+        return [p0.astype(int), p1.astype(int)] 
 
 
     def place_vertices(self, image_paths):
         vertices = []
         for i in range(len(image_paths)):
             for j in range(i):
-                intersection = self.segment_intersection(image_paths[i][0], image_paths[j][0])
+                intersection = self.segment_intersection(image_paths[i], image_paths[j])
                 vertices.append(intersection)
 
                 cv.circle(self.img, intersection, radius = 0, color = (255, 0, 0), thickness = 5)
@@ -86,8 +70,10 @@ class path:
 
 
     def segment_intersection(self, line0, line1):
-        p0x, p0y, p1x, p1y = line0 
-        p2x, p2y, p3x, p3y = line1
+        p0x, p0y = line0[0]
+        p1x, p1y = line0[1] 
+        p2x, p2y = line1[0]
+        p3x, p3y = line1[1]
         s1x = p1x - p0x
         s1y = p1y - p0y
         s2x = p3x - p2x
@@ -116,13 +102,34 @@ class path:
         cv.destroyAllWindows()
 
 
-    def slope(self, x1, y1, x2, y2):
-        denom = x1 - x2
-        if denom == 0:
-            return 0
-        slope = (y1 - y2) / denom
-        return slope
+    def skeletonize(self, img):
+        size = np.size(img)
+        skel = np.zeros(img.shape,np.uint8)
 
-    
+        element = cv.getStructuringElement(cv.MORPH_CROSS, (3, 3))
+        done = False
+
+        while not done:
+            eroded = cv.erode(img, element)
+            temp = cv.dilate(eroded, element)
+            temp = cv.subtract(img, temp)
+            skel = cv.bitwise_or(skel, temp)
+            img = eroded.copy()
+
+            zeros = size - cv.countNonZero(img)
+            if zeros == size:
+                done = True
+
+        return skel
+
+        
     def to_adj_mat(self, image_paths):
         pass
+
+
+    def vec(self, p0, p1):
+        dx = p0[0] - p1[0]
+        dy = p0[1] - p1[1]
+        return np.array([dx, dy])
+
+
