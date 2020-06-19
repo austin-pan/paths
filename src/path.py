@@ -9,8 +9,8 @@ class path:
         self.raw_img = cv.imread(file_path)
         self.img = self.raw_img
         image_paths = self.extract_paths(color)
-        image_vertices = self.place_vertices(image_paths)
-        # adj_mat = self.to_adj_mat(image_paths)
+        image_vertices, adj_mat = self.place_vertices(image_paths)
+
 
     def extract_paths(self, color):
         print("extracting ", color)
@@ -55,14 +55,21 @@ class path:
 
 
     def place_vertices(self, image_paths):
+        n = len(image_paths)
         vertices = []
-        for i in range(len(image_paths)):
+        adj_mat = np.zeros((n, n))
+        for i in range(n):
             for j in range(i):
                 intersection = self.segment_intersection(image_paths[i], image_paths[j])
-                vertices.append(intersection)
+                if intersection is not None:
+                    vertices.append(intersection)
+                    w = np.linalg.norm(intersection)
+                    adj_mat[i, j] = w
+                    adj_mat[j, i] = w
+                    print(w)
 
-                cv.circle(self.img, intersection, radius = 0, color = (255, 0, 0), thickness = 5)
-        return vertices
+                    cv.circle(self.img, intersection, radius = 0, color = (255, 0, 0), thickness = 5)
+        return (vertices, adj_mat)
 
 
     def save_image(self):
@@ -81,7 +88,7 @@ class path:
 
         denom = -s2x * s1y + s1x * s2y
         if denom == 0:
-            return (0, 0)
+            return None
         s = (-s1y * (p0x - p2x) + s1x * (p0y - p2y)) / denom
         t = (s2x * (p0y - p2y) - s2y * (p0x - p2x)) / denom
 
@@ -90,7 +97,7 @@ class path:
             iy = p0y + (t * s1y)
             return (int(ix), int(iy))
 
-        return (0, 0)
+        return None
 
 
     def show_image(self):
